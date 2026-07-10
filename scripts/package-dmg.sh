@@ -56,7 +56,7 @@ ${DISPLAY_NAME} ${VERSION}
 - 菜单栏图标可以打开 Runtime 浮窗、主窗口、设置或退出应用。
 
 隐私:
-- 本应用只读取本机 Codex app-server、~/.codex 和可选 ~/.claude 的本地统计数据。
+- 本应用只读取本机 Codex app-server 和 ~/.codex 的本地统计数据，不读取 ~/.claude。
 - 不读取认证 token，不上传数据。
 README
 

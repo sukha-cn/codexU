@@ -1,58 +1,5 @@
 import SwiftUI
 
-struct RuntimeSelector: View {
-    @Environment(\.colorScheme) private var colorScheme
-    let selected: RuntimeScope
-    let scopes: [RuntimeScope]
-    let language: WidgetLanguage
-    let onSelect: (RuntimeScope) -> Void
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(scopes) { scope in
-                Button {
-                    onSelect(scope)
-                } label: {
-                    HStack(spacing: 5) {
-                        RuntimeLogoView(scope: scope, size: 15)
-                        Text(label(for: scope))
-                            .font(.system(size: 11, weight: .semibold))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.82)
-                    }
-                    .foregroundStyle(selected == scope ? .primary : .secondary)
-                    .frame(minWidth: scope == .claudeCode ? 112 : 78, minHeight: 24)
-                    .padding(.horizontal, 6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(selected == scope ? WidgetPalette.controlSelectedFill(colorScheme) : Color.clear)
-                    )
-                }
-                .buttonStyle(.plain)
-                .help(label(for: scope))
-            }
-        }
-        .padding(3)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(WidgetPalette.controlFill(colorScheme))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(WidgetPalette.controlStroke(colorScheme), lineWidth: 0.8)
-                )
-        )
-    }
-
-    private func label(for scope: RuntimeScope) -> String {
-        switch scope {
-        case .codex:
-            return "Codex"
-        case .claudeCode:
-            return language.text("Claude Code", "Claude Code")
-        }
-    }
-}
-
 struct RuntimeStatusMenuView: View {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var store: UsageStore
@@ -64,7 +11,7 @@ struct RuntimeStatusMenuView: View {
     let quit: () -> Void
 
     private var language: WidgetLanguage { settings.language }
-    private var displayedScopes: [RuntimeScope] { settings.visibleRuntimeScopes }
+    private var displayedScopes: [RuntimeScope] { RuntimeScope.allCases }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -125,7 +72,7 @@ struct RuntimeStatusMenuView: View {
             Text(language.text("今日总 token", "Total tokens today"))
                 .font(.system(size: 11, weight: .semibold))
             Spacer()
-            Text(runtimeFormatTokens(store.totalTodayTokens(for: displayedScopes)))
+            Text(runtimeFormatTokens(store.totalTodayTokens))
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .monospacedDigit()
         }
@@ -295,10 +242,8 @@ struct RuntimeSummaryCard: View {
         switch summary.status {
         case .available:
             return WidgetPalette.statusSuccess
-        case .localOnly, .snapshotNeeded:
+        case .localOnly:
             return WidgetPalette.statusWarning
-        case .stale:
-            return WidgetPalette.statusInfo
         case .unavailable:
             return WidgetPalette.statusDanger
         }
@@ -314,19 +259,9 @@ struct RuntimeSummaryCard: View {
 
     private var localizedSourceLabel: String {
         if language.isChinese {
-            switch summary.scope {
-            case .codex:
-                return summary.fiveHourRemainingPercent == nil ? "本机统计；额度暂不可用" : "官方额度 + 本机统计"
-            case .claudeCode:
-                return summary.fiveHourRemainingPercent == nil ? "本机统计；额度需 active snapshot" : "active snapshot + 本机统计"
-            }
+            return summary.fiveHourRemainingPercent == nil ? "本机统计；额度暂不可用" : "官方额度 + 本机统计"
         }
-        switch summary.scope {
-        case .codex:
-            return summary.fiveHourRemainingPercent == nil ? "Local records; quota unavailable" : "Official quota + local records"
-        case .claudeCode:
-            return summary.fiveHourRemainingPercent == nil ? "Local records; quota needs active snapshot" : "Active snapshot + local records"
-        }
+        return summary.fiveHourRemainingPercent == nil ? "Local records; quota unavailable" : "Official quota + local records"
     }
 }
 
@@ -360,25 +295,13 @@ struct RuntimeLogoView: View {
     }
 
     private var fallbackSystemName: String {
-        switch scope {
-        case .codex:
-            return "terminal"
-        case .claudeCode:
-            return "curlybraces"
-        }
+        "terminal"
     }
 }
 
 private enum RuntimeLogo {
     static func image(for scope: RuntimeScope) -> NSImage? {
-        let name: String
-        switch scope {
-        case .codex:
-            name = "codex-color"
-        case .claudeCode:
-            name = "claudecode-color"
-        }
-        guard let url = Bundle.main.url(forResource: name, withExtension: "png") else {
+        guard let url = Bundle.main.url(forResource: "codex-color", withExtension: "png") else {
             return nil
         }
         return NSImage(contentsOf: url)

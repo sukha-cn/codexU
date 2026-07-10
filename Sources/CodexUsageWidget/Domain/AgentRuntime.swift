@@ -2,7 +2,6 @@ import Foundation
 
 enum RuntimeScope: String, CaseIterable, Identifiable, Codable, Equatable {
     case codex
-    case claudeCode
 
     var id: String { rawValue }
 
@@ -14,29 +13,17 @@ enum RuntimeScope: String, CaseIterable, Identifiable, Codable, Equatable {
     }
 
     var runtimeId: String {
-        switch self {
-        case .codex:
-            return "codex"
-        case .claudeCode:
-            return "claude-code"
-        }
+        "codex"
     }
 
     var displayName: String {
-        switch self {
-        case .codex:
-            return "Codex"
-        case .claudeCode:
-            return "Claude Code"
-        }
+        "Codex"
     }
 }
 
 enum RuntimeMenuStatus: String, Codable, Equatable {
     case available
     case localOnly
-    case snapshotNeeded
-    case stale
     case unavailable
 
     func localized(_ language: WidgetLanguage) -> String {
@@ -45,10 +32,6 @@ enum RuntimeMenuStatus: String, Codable, Equatable {
             return language.text("可用", "Available")
         case .localOnly:
             return language.text("本机统计", "Local only")
-        case .snapshotNeeded:
-            return language.text("需要快照", "Snapshot needed")
-        case .stale:
-            return language.text("快照过期", "Stale")
         case .unavailable:
             return language.text("暂不可用", "Unavailable")
         }

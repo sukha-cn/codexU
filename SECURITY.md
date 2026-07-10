@@ -23,12 +23,9 @@ codexU reads:
 - `~/.codex/automations/**/automation.toml`
 - local responses from `codex app-server`
 - `~/.codex/sessions/**/rollout-*.jsonl` and `~/.codex/archived_sessions/*.jsonl` token metadata
-- `~/.claude/projects/**/*.jsonl` assistant `message.usage` and `tool_use.name` metadata
-- `~/.claude/tasks/**/*.json` task status/title metadata
-- optional `~/Library/Caches/codexU/claude-code/statusline-snapshot.json`
 - optional `~/Library/Caches/codexU/update-check.json` for cached GitHub Release update metadata
 
-It should not upload local usage, transcript, task, thread, account, or path data to a third-party service. Claude Code transcript parsing must not store prompt text, assistant response text, tool arguments, or tool output.
+The Codex-only build must not enumerate, read, cache, or upload data under `~/.claude/`. It should not upload local usage, transcript, task, thread, account, or path data to a third-party service.
 
 ## Network Scope
 

@@ -1,22 +1,18 @@
 # codexU
 
-codexU is a macOS menu bar and desktop app for tracking OpenAI Codex / ChatGPT Codex and Claude Code quota, token usage, and today's task status. It keeps the information you check most in the menu bar and main window, so you can quickly see remaining quota, reset times, and daily work progress.
-
-![codexU menu bar runtime popover](docs/screenshot-v1.0.0-beta-menu-popover.png)
+This Codex-only branch is based on codexU v1.0.1. It is a macOS menu bar and desktop app for tracking OpenAI Codex / ChatGPT Codex quota, token usage, and today's task status. It loads Codex local data only and includes no other runtime reader.
 
 ## Who It Is For
 
 - Developers who use OpenAI Codex, Codex CLI, or the Codex desktop app every day.
-- Developers who use both Codex and Claude Code and want one local view for both runtimes.
 - ChatGPT Pro / Team users who want a quick view of Codex 5-hour quota, 7-day quota, token usage, and reset times.
 - macOS users who want to check Codex status without repeatedly opening a browser or terminal.
 
 ## Features
 
 - Shows remaining and used Codex quota for the 5-hour and 7-day windows, including reset times.
-- Adds a menu bar runtime menu with separate Codex and Claude Code cards, 5-hour/7-day remaining quota, today's token usage, and total tokens today.
-- Adds a top-level `Codex | Claude Code` switch in the main widget so all panels can switch runtime scope manually.
-- Supports Claude Code local transcript usage, 7-day trends, project rankings, top tools/Skills, and a basic task board.
+- Adds a menu bar Codex menu with 5-hour/7-day remaining quota, today's token usage, and total tokens today.
+- Registers only the Codex data provider and does not scan or cache `~/.claude` data.
 - Summarizes token usage for today, the last 7 days, and lifetime totals with uncached input, cached input, and output splits.
 - Estimates the current month's API-equivalent value from OpenAI API token prices and shows progress against Plus, Pro 100, Pro 200, and the full monthly quota value. The bar uses a segmented nonlinear scale, so movement past Pro 200 remains visible and is not a linear dollar ratio.
 - Adds lower dashboard tabs for today's tasks, usage trend, project ranking, and Skill usage.
@@ -33,8 +29,8 @@ codexU is a macOS menu bar and desktop app for tracking OpenAI Codex / ChatGPT C
 ## Keyboard Shortcuts
 
 - `Command + U`: show or hide the main window. If the window is minimized, the shortcut restores it and brings it forward.
-- Menu bar gauge icon: opens the runtime menu. Clicking a Codex or Claude Code card opens the main widget with that runtime selected.
-- Menu bar runtime menu: shows quick Codex / Claude Code status and provides Open, Settings, and Quit actions.
+- Menu bar gauge icon: opens the Codex usage menu. Clicking the Codex card opens the main widget.
+- Menu bar Codex usage menu: shows quick quota and token status and provides Open, Settings, and Quit actions.
 - Settings window: configure language, appearance, always-on-top behavior, whether closing the main window keeps the app running in the background, and control automatic checks or manually check GitHub Releases from the System section.
 - Main-window refresh button: immediately refresh quota, token usage, trend, and task board.
 - System window controls: close, minimize, or zoom the main window. After closing, reopen from the menu bar item or shortcut; quit from the menu bar runtime menu or the app menu.
@@ -50,7 +46,7 @@ codexU is distributed outside the Mac App Store. On first launch, macOS may bloc
 
 You can also right-click `codexU.app` in Finder and choose **Open**, then confirm the same security prompt.
 
-codexU needs access to local Codex data under `~/.codex/`. When Claude Code stats are used, it also reads local transcripts, tasks, and status cache files under `~/.claude/`. If macOS asks for file or folder access, allow it so the widget can read local usage, threads, and automation metadata.
+codexU needs access to local Codex data under `~/.codex/`. This branch does not read `~/.claude/`. If macOS asks for file or folder access, grant only the access needed for local Codex usage, threads, and automation metadata.
 
 ## Install
 
@@ -72,7 +68,6 @@ After installation, codexU checks GitHub Releases for new versions at most once 
 - A local Codex installation.
 - A signed-in Codex account for quota data.
 - Codex must have been used at least once so `~/.codex/state_5.sqlite` exists.
-- Claude Code support is optional. Historical tokens come from `~/.claude/projects/**/*.jsonl`; quota requires a local statusLine snapshot cache.
 - Xcode Command Line Tools for building from source.
 
 ## Build From Source
@@ -97,6 +92,12 @@ Inspect the data source output:
 
 ```sh
 make probe
+```
+
+Run the isolated Codex-only checks:
+
+```sh
+make test
 ```
 
 ## Package A DMG
@@ -133,12 +134,9 @@ For Developer ID signing and notarization, see [DISTRIBUTION.md](DISTRIBUTION.md
 - Usage trends and project rankings: aggregated from local session `token_count` events, with an approximate thread-updated-time fallback when detailed events are unavailable.
 - Tool and Skill usage: tool call and Skill load records parsed from local session events.
 - Scheduled tasks: enabled automation metadata under `~/.codex/automations/**/automation.toml`.
-- Claude Code historical tokens: assistant `message.usage` fields in `~/.claude/projects/**/*.jsonl`.
-- Claude Code tools, Skills, and tasks: transcript `tool_use.name` / explicit Skill attribution, plus `~/.claude/tasks/**/*.json`.
-- Claude Code active quota: optional `~/Library/Caches/codexU/claude-code/statusline-snapshot.json`; without it, 5-hour and 7-day quota show `--`.
 - Update checks: default access to the GitHub Releases API for public `shanggqm/codexU` release metadata, cached in `~/Library/Caches/codexU/update-check.json`.
 
-Current Codex quota APIs expose rolling-window percentages and reset times, not absolute account quota sizes. Claude Code support reads local history and an optional active snapshot; it is not a Claude.ai official billing view. See [RESEARCH.md](RESEARCH.md) for the data model and fallback behavior.
+Current Codex quota APIs expose rolling-window percentages and reset times, not absolute account quota sizes. See [RESEARCH.md](RESEARCH.md) for the data model and fallback behavior.
 
 ## FAQ
 

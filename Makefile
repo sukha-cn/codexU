@@ -26,7 +26,7 @@ else
 CODESIGN_FLAGS := --force --deep --options runtime --timestamp --sign "$(SIGN_IDENTITY)" $(CODESIGN_EXTRA_FLAGS)
 endif
 
-.PHONY: build run probe install dmg dmg-arm64 dmg-intel checksum checksum-arm64 checksum-intel release release-arm64 release-intel release-all notarize verify clean clean-dist
+.PHONY: build test run probe install dmg dmg-arm64 dmg-intel checksum checksum-arm64 checksum-intel release release-arm64 release-intel release-all notarize verify clean clean-dist
 
 build:
 	rm -rf "$(APP_DIR)"
@@ -42,6 +42,9 @@ build:
 		-framework SwiftUI
 	codesign $(CODESIGN_FLAGS) "$(APP_DIR)"
 	codesign --verify --deep --strict "$(APP_DIR)"
+
+test:
+	./scripts/test-codex-only.sh
 
 run: build
 	open "$(APP_DIR)"

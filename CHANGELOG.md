@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- 基于 v1.0.1 收敛为 Codex-only 构建，删除 Claude Code Provider、transcript/task 读取器、状态快照缓存和相关资源。
+- 移除 Runtime 切换与展示范围设置；菜单栏、主窗口、任务和统计仅呈现 Codex 数据。
+- 新增隔离的 `make test`，使用临时 home/cache 和 Codex SQLite fixture 验证输出只包含 Codex。
+
 ## 1.0.1 - 2026-07-10
 
 - 兼容新版 ChatGPT/Codex App 的动态路径，同时保留旧版 App 与标准 CLI 回退。
