@@ -274,6 +274,7 @@ struct AppUpdateResult: Codable, Equatable {
 
 struct AppUpdateCache: Codable, Equatable {
     let schemaVersion: Int
+    let repository: String
     let checkedAt: Date
     let etag: String?
     let result: AppUpdateResult
