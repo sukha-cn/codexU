@@ -309,7 +309,7 @@ enum AppUpdateSelfTest {
           {
             "tag_name": "v1.0.0-beta03",
             "name": "codexU v1.0.0-beta03",
-            "html_url": "https://github.com/shanggqm/codexU/releases/tag/v1.0.0-beta03",
+            "html_url": "https://github.com/sukha-cn/codexU/releases/tag/v1.0.0-beta03",
             "published_at": "2026-07-09T12:00:00Z",
             "prerelease": true,
             "draft": false,
@@ -317,7 +317,7 @@ enum AppUpdateSelfTest {
             "assets": [
               {
                 "name": "codexU-1.0.0-beta03-mac-arm64.dmg",
-                "browser_download_url": "https://github.com/shanggqm/codexU/releases/download/v1.0.0-beta03/codexU-1.0.0-beta03-mac-arm64.dmg",
+                "browser_download_url": "https://github.com/sukha-cn/codexU/releases/download/v1.0.0-beta03/codexU-1.0.0-beta03-mac-arm64.dmg",
                 "size": 1234,
                 "content_type": "application/octet-stream"
               }
