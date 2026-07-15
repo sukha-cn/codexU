@@ -543,7 +543,6 @@ final class UsageStore: ObservableObject {
     @Published var multiRuntimeSnapshot: MultiRuntimeUsageSnapshot = .empty
     @Published var runtimeSnapshots: [RuntimeUsageSnapshot] = []
     @Published var selectedRuntimeScope: RuntimeScope = .codex
-    @Published var visibleRuntimeScopes: [RuntimeScope] = RuntimeScope.allCases
     @Published var isRefreshing = false
     @Published private(set) var statisticsPreference = StatisticsTimeZonePreferenceStore.load()
     @Published private(set) var statisticsTransitionMessage: String?
@@ -571,12 +570,6 @@ final class UsageStore: ObservableObject {
     private let taskBoardRefreshInterval: TimeInterval = 60
     private let foregroundFullRefreshInterval: TimeInterval = 5 * 60
     private let backgroundFullRefreshInterval: TimeInterval = 15 * 60
-
-    var runtimeSummaries: [RuntimeMenuSummary] {
-        RuntimeScope.allCases.compactMap { scope in
-            runtimeSnapshot(for: scope)?.summary
-        }
-    }
 
     var totalTodayTokens: Int64 {
         multiRuntimeSnapshot.totalTodayTokens
@@ -767,20 +760,12 @@ final class UsageStore: ObservableObject {
     }
 
     func selectRuntime(_ scope: RuntimeScope) {
-        let nextScope = visibleRuntimeScopes.contains(scope) ? scope : (visibleRuntimeScopes.first ?? scope)
-        selectedRuntimeScope = nextScope
-        snapshot = multiRuntimeSnapshot.displaySnapshot(for: nextScope)
+        selectedRuntimeScope = scope
+        snapshot = multiRuntimeSnapshot.displaySnapshot(for: scope)
     }
 
     func runtimeSnapshot(for scope: RuntimeScope) -> RuntimeUsageSnapshot? {
         runtimeSnapshots.first { $0.scope == scope }
-    }
-
-    func updateVisibleRuntimeScopes(_ scopes: [RuntimeScope]) {
-        visibleRuntimeScopes = scopes.isEmpty ? RuntimeScope.allCases : scopes
-        if !visibleRuntimeScopes.contains(selectedRuntimeScope) {
-            selectRuntime(visibleRuntimeScopes.first ?? selectedRuntimeScope)
-        }
     }
 
     func setMainWindowActive(_ isActive: Bool) {
@@ -904,8 +889,7 @@ final class UsageStore: ObservableObject {
             statisticsIdentity: multiSnapshot.statisticsIdentity
         )
         let nextScope = reconciledSnapshot.defaultScope(
-            preferred: selectedRuntimeScope,
-            allowedScopes: visibleRuntimeScopes
+            preferred: selectedRuntimeScope
         )
         multiRuntimeSnapshot = reconciledSnapshot
         runtimeSnapshots = reconciledRuntimes
@@ -937,6 +921,8 @@ final class UsageStore: ObservableObject {
 
 final class CodexUsageReader {
     private let fileManager = FileManager.default
+    private let homeDirectory: URL
+    private let cacheDirectory: URL
     private let localAnalyticsCacheVersion = 7
     private let sessionUsageCacheVersion = 4
     private static let sessionUsageCacheLimit = 1_024
@@ -947,6 +933,11 @@ final class CodexUsageReader {
     private static var persistentSessionUsageCacheIsDirty = false
     private static var lastPersistentSessionUsageCacheWriteAt: Date?
     private static var localAnalyticsCache: LocalAnalyticsCacheEntry?
+
+    init(context: RuntimeLoadContext = .live()) {
+        homeDirectory = context.homeDirectory
+        cacheDirectory = context.cacheDirectory
+    }
 
     func load(context: RuntimeLoadContext) -> UsageSnapshot {
         var messages: [String] = []
@@ -1270,8 +1261,8 @@ final class CodexUsageReader {
 
     private func readLocalUsage(context: RuntimeLoadContext, messages: inout [String]) -> LocalUsage? {
         guard let dbPath = firstExistingPath([
-            NSHomeDirectory() + "/.codex/state_5.sqlite",
-            NSHomeDirectory() + "/.codex/sqlite/state_5.sqlite"
+            homeDirectory.appendingPathComponent(".codex/state_5.sqlite").path,
+            homeDirectory.appendingPathComponent(".codex/sqlite/state_5.sqlite").path
         ]) else {
             messages.append("未找到 Codex state_5.sqlite")
             return nil
@@ -2182,8 +2173,8 @@ final class CodexUsageReader {
         var doneItems: [TaskItem] = []
 
         if let dbPath = firstExistingPath([
-            NSHomeDirectory() + "/.codex/state_5.sqlite",
-            NSHomeDirectory() + "/.codex/sqlite/state_5.sqlite"
+            homeDirectory.appendingPathComponent(".codex/state_5.sqlite").path,
+            homeDirectory.appendingPathComponent(".codex/sqlite/state_5.sqlite").path
         ]), let sqlitePath = firstExistingPath([
             "/usr/bin/sqlite3",
             "/opt/homebrew/bin/sqlite3",
@@ -2277,7 +2268,7 @@ final class CodexUsageReader {
     }
 
     private func readAutomationTasks() -> [TaskItem] {
-        let root = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(".codex/automations")
+        let root = homeDirectory.appendingPathComponent(".codex/automations")
         guard let enumerator = fileManager.enumerator(at: root, includingPropertiesForKeys: nil) else {
             return []
         }
@@ -2339,6 +2330,10 @@ final class CodexUsageReader {
     private func resolveCodexExecutablePath() -> String? {
         var candidates: [String] = []
 
+        if let override = ProcessInfo.processInfo.environment["CODEXU_CODEX_PATH_OVERRIDE"] {
+            candidates.append(override)
+        }
+
         // The app's display name and install path may change, while its bundle identifier remains stable.
         if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.openai.codex") {
             candidates.append(
@@ -2364,21 +2359,11 @@ final class CodexUsageReader {
     }
 
     private func localAnalyticsCacheURL() -> URL? {
-        guard let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first else {
-            return nil
-        }
-        return caches
-            .appendingPathComponent("codexU", isDirectory: true)
-            .appendingPathComponent("local-analytics-v2.json")
+        cacheDirectory.appendingPathComponent("local-analytics-v2.json")
     }
 
     private func sessionUsageCacheURL() -> URL? {
-        guard let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first else {
-            return nil
-        }
-        return caches
-            .appendingPathComponent("codexU", isDirectory: true)
-            .appendingPathComponent("session-usage-v1.json")
+        cacheDirectory.appendingPathComponent("session-usage-v1.json")
     }
 
     private func readPersistentLocalAnalyticsCache() -> LocalAnalyticsCacheEntry? {
@@ -2924,7 +2909,6 @@ enum ParticleAnimationMode: String, CaseIterable, Equatable {
 final class AppSettings: ObservableObject {
     private static let keepMainWindowOnTopKey = "codexU.keepMainWindowOnTop"
     private static let keepRunningWhenMainWindowClosedKey = "codexU.keepRunningWhenMainWindowClosed"
-    private static let visibleRuntimeScopesKey = "codexU.visibleRuntimeScopes"
     private static let automaticUpdateChecksEnabledKey = "codexU.update.autoCheckEnabled"
     private static let skippedUpdateVersionKey = "codexU.update.skippedVersion"
 
@@ -2977,12 +2961,6 @@ final class AppSettings: ObservableObject {
         }
     }
 
-    @Published private(set) var visibleRuntimeScopes: [RuntimeScope] {
-        didSet {
-            defaults.set(visibleRuntimeScopes.map(\.runtimeId), forKey: Self.visibleRuntimeScopesKey)
-        }
-    }
-
     @Published private(set) var statusItemPreferences: StatusItemPreferences
     @Published private(set) var globalShortcut: GlobalShortcut?
     @Published private(set) var globalShortcutError: GlobalShortcutError?
@@ -3006,7 +2984,6 @@ final class AppSettings: ObservableObject {
             automaticUpdateChecksEnabled = defaults.bool(forKey: Self.automaticUpdateChecksEnabledKey)
         }
         skippedUpdateVersion = defaults.string(forKey: Self.skippedUpdateVersionKey)
-        visibleRuntimeScopes = Self.storedVisibleRuntimeScopes(defaults: defaults)
         statusItemPreferences = StatusItemPreferencesStore.load(defaults: defaults)
         let storedShortcut = GlobalShortcut.load(defaults: defaults)
         if let storedShortcut, storedShortcut.validationError != nil {
@@ -3016,36 +2993,6 @@ final class AppSettings: ObservableObject {
             globalShortcut = storedShortcut
         }
         globalShortcutError = nil
-    }
-
-    func isRuntimeVisible(_ scope: RuntimeScope) -> Bool {
-        visibleRuntimeScopes.contains(scope)
-    }
-
-    @discardableResult
-    func setRuntime(_ scope: RuntimeScope, visible: Bool) -> Bool {
-        if visible {
-            visibleRuntimeScopes = Self.orderedRuntimeScopes(Set(visibleRuntimeScopes + [scope]))
-            return true
-        }
-        guard visibleRuntimeScopes.count > 1 else {
-            return false
-        }
-        visibleRuntimeScopes = visibleRuntimeScopes.filter { $0 != scope }
-        return true
-    }
-
-    private static func storedVisibleRuntimeScopes(defaults: UserDefaults) -> [RuntimeScope] {
-        guard let identifiers = defaults.array(forKey: visibleRuntimeScopesKey) as? [String] else {
-            return RuntimeScope.allCases
-        }
-        let scopes = identifiers.compactMap(RuntimeScope.storedIdentifier)
-        let ordered = orderedRuntimeScopes(Set(scopes))
-        return ordered.isEmpty ? RuntimeScope.allCases : ordered
-    }
-
-    private static func orderedRuntimeScopes(_ scopes: Set<RuntimeScope>) -> [RuntimeScope] {
-        RuntimeScope.allCases.filter { scopes.contains($0) }
     }
 
     @discardableResult
@@ -3464,47 +3411,6 @@ struct UsageWidgetView: View {
         var items: [DiagnosticItem] = []
         let messages = snapshot.messages.joined(separator: "\n")
 
-        if store.selectedRuntimeScope == .claudeCode {
-            if snapshot.fiveHourQuota == nil || snapshot.sevenDayQuota == nil {
-                let isStale = messages.contains("快照已过期")
-                items.append(DiagnosticItem(
-                    id: isStale ? "claude-statusline-stale" : "claude-statusline-missing",
-                    title: isStale
-                        ? language.text("Claude Code 快照已过期", "Claude Code snapshot is stale")
-                        : language.text("额度需要 Claude Code active session 快照", "Quota needs a Claude Code active session snapshot"),
-                    detail: isStale
-                        ? language.text("打开 Claude Code 后刷新；本机 token 统计仍可继续显示。", "Open Claude Code and refresh. Local token stats can still be shown.")
-                        : language.text("首版只读取本地 statusLine 快照；没有快照时 5 小时和 7 日额度显示为 --。", "This version only reads a local statusLine snapshot. 5-hour and 7-day quota show -- without it."),
-                    systemName: isStale ? "clock.badge.exclamationmark" : "waveform.path.ecg",
-                    tint: isStale ? WidgetPalette.statusInfo : WidgetPalette.statusWarning
-                ))
-            }
-
-            if snapshot.local == nil || snapshot.local?.detailedUsage == nil {
-                items.append(DiagnosticItem(
-                    id: "claude-local-usage",
-                    title: language.text("暂无 Claude Code 本机用量记录", "No local Claude Code usage records yet"),
-                    detail: language.text("本机 token 统计来自 ~/.claude/projects 下的 transcript JSONL，只读取 usage 和工具名称等结构化字段。", "Local token stats come from transcript JSONL under ~/.claude/projects and only read structured usage and tool names."),
-                    systemName: "doc.text.magnifyingglass",
-                    tint: WidgetPalette.statusInfo
-                ))
-            }
-
-            if items.isEmpty {
-                items = snapshot.messages.prefix(3).enumerated().map { index, message in
-                    DiagnosticItem(
-                        id: "claude-message-\(index)",
-                        title: language.text("运行提示", "Runtime note"),
-                        detail: localizedReaderMessage(message, language: language),
-                        systemName: "info.circle.fill",
-                        tint: WidgetPalette.statusInfo
-                    )
-                }
-            }
-
-            return items
-        }
-
         if (snapshot.fiveHourQuota == nil && snapshot.sevenDayQuota == nil) || snapshot.account == nil {
             if messages.contains("未找到 codex") {
                 items.append(DiagnosticItem(
@@ -3714,14 +3620,6 @@ struct TitlebarToolbarView: View {
     var body: some View {
         HStack(spacing: 10) {
             Spacer(minLength: 0)
-            RuntimeSelector(
-                selected: store.selectedRuntimeScope,
-                scopes: settings.visibleRuntimeScopes,
-                language: language
-            ) { scope in
-                store.selectRuntime(scope)
-            }
-
             HStack(spacing: 2) {
                 HeaderActionButton(
                     systemName: store.isRefreshing ? "hourglass" : "arrow.clockwise",
@@ -3819,30 +3717,6 @@ struct SettingsPanelView: View {
                                 SettingsSegmentOption(value: .powerSaving, title: language.text("省电", "Power Saving"))
                             ],
                             width: 190
-                        )
-                    }
-                }
-
-                settingsSection(
-                    title: "Runtime",
-                    detail: language.text("展示范围", "Display")
-                ) {
-                    SettingsPickerRow(
-                        title: language.text("展示 Runtime", "Visible runtimes"),
-                        detail: language.text("主窗口和菜单栏浮窗中的 Runtime 范围", "Runtime scope in the main window and menu popover")
-                    ) {
-                        SettingsRuntimeMultiSelectControl(
-                            selectedScopes: settings.visibleRuntimeScopes,
-                            language: language
-                        ) { scope in
-                            settings.setRuntime(scope, visible: !settings.isRuntimeVisible(scope))
-                        }
-                        .help(runtimeSelectionHelp)
-                        .accessibilityLabel(language.text("展示 Runtime", "Visible runtimes"))
-                        .accessibilityValue(
-                            settings.visibleRuntimeScopes
-                                .map(\.displayName)
-                                .joined(separator: ", ")
                         )
                     }
                 }
@@ -3953,11 +3827,6 @@ struct SettingsPanelView: View {
                     detail: language.text("状态与更新", "Status")
                 ) {
                     SettingsValueRow(
-                        title: language.text("当前 Runtime", "Current runtime"),
-                        detail: language.text("主窗口数据范围", "Main window data scope"),
-                        value: store.selectedRuntimeScope.displayName
-                    )
-                    SettingsValueRow(
                         title: language.text("计划状态", "Plan"),
                         detail: language.text("来自本机账户读取结果", "Read from the local account result"),
                         value: planLabel
@@ -4053,12 +3922,6 @@ struct SettingsPanelView: View {
         store.snapshot.account?.planType?.uppercased() ?? "LOCAL"
     }
 
-    private var runtimeSelectionHelp: String {
-        language.text(
-            "点击切换展示范围；至少需要保留一个 Runtime",
-            "Click to change visibility; at least one runtime must stay visible"
-        )
-    }
 }
 
 struct SettingsPickerRow<Control: View>: View {
@@ -4133,72 +3996,6 @@ struct SettingsSegmentedControl<Value: Hashable>: View {
                 )
         )
         .clipShape(RoundedRectangle(cornerRadius: settingsControlCornerRadius, style: .continuous))
-    }
-}
-
-struct SettingsRuntimeMultiSelectControl: View {
-    @Environment(\.colorScheme) private var colorScheme
-    let selectedScopes: [RuntimeScope]
-    let language: WidgetLanguage
-    let onToggle: (RuntimeScope) -> Void
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(Array(RuntimeScope.allCases.enumerated()), id: \.element.id) { index, scope in
-                Button {
-                    onToggle(scope)
-                } label: {
-                    HStack(spacing: 6) {
-                        RuntimeLogoView(scope: scope, size: 16)
-                        Text(label(for: scope))
-                            .font(.system(size: 12, weight: isSelected(scope) ? .semibold : .medium))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.82)
-                    }
-                    .foregroundStyle(isSelected(scope) ? Color.white : Color.secondary)
-                    .frame(maxWidth: .infinity, minHeight: settingsSegmentHeight)
-                    .background(
-                        RoundedRectangle(cornerRadius: settingsControlCornerRadius, style: .continuous)
-                            .fill(isSelected(scope) ? WidgetPalette.brandPrimary : Color.clear)
-                    )
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(label(for: scope))
-                .accessibilityValue(isSelected(scope) ? language.text("已选择", "Selected") : language.text("未选择", "Not selected"))
-
-                if index < RuntimeScope.allCases.count - 1 {
-                    Rectangle()
-                        .fill(WidgetPalette.controlStroke(colorScheme))
-                        .frame(width: 1, height: 16)
-                        .padding(.horizontal, 1)
-                }
-            }
-        }
-        .padding(3)
-        .frame(width: settingsAccessoryColumnWidth, height: settingsSegmentHeight + 6)
-        .background(
-            RoundedRectangle(cornerRadius: settingsControlCornerRadius, style: .continuous)
-                .fill(WidgetPalette.controlFill(colorScheme))
-                .overlay(
-                    RoundedRectangle(cornerRadius: settingsControlCornerRadius, style: .continuous)
-                        .strokeBorder(WidgetPalette.controlStroke(colorScheme), lineWidth: 0.8)
-                )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: settingsControlCornerRadius, style: .continuous))
-    }
-
-    private func isSelected(_ scope: RuntimeScope) -> Bool {
-        selectedScopes.contains(scope)
-    }
-
-    private func label(for scope: RuntimeScope) -> String {
-        switch scope {
-        case .codex:
-            return "Codex"
-        case .claudeCode:
-            return language.text("Claude Code", "Claude Code")
-        }
     }
 }
 
@@ -8845,7 +8642,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPo
         } else if settings.globalShortcut == nil {
             _ = installGlobalHotKeyHandler()
         }
-        store.updateVisibleRuntimeScopes(settings.visibleRuntimeScopes)
         store.start()
         updateStore.startAutomaticCheck()
     }
@@ -9144,19 +8940,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPo
             }
             .store(in: &cancellables)
 
-        settings.$visibleRuntimeScopes
-            .receive(on: RunLoop.main)
-            .sink { [weak self] scopes in
-                guard let self else { return }
-                self.store.updateVisibleRuntimeScopes(scopes)
-                self.statusPopover?.contentSize = CGSize(
-                    width: 380,
-                    height: runtimeStatusPopoverHeight(for: scopes.count)
-                )
-                self.updateStatusItem()
-            }
-            .store(in: &cancellables)
-
         settings.$statusItemPreferences
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
@@ -9190,7 +8973,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, NSPo
         popover.animates = true
         popover.contentSize = CGSize(
             width: 380,
-            height: runtimeStatusPopoverHeight(for: settings.visibleRuntimeScopes.count)
+            height: runtimeStatusPopoverHeight(for: 1)
         )
         popover.delegate = self
         popover.contentViewController = NSHostingController(

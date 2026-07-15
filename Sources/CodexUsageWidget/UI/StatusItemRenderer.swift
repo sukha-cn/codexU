@@ -531,7 +531,7 @@ struct StatusItemRenderer {
             return
         }
         drawText(
-            scope == .codex ? "C" : "A",
+            "C",
             in: rect,
             font: .systemFont(ofSize: max(6, rect.height * 0.64), weight: .bold),
             color: primaryTextColor,
@@ -549,8 +549,6 @@ struct StatusItemRenderer {
         switch scope {
         case .codex:
             resourceName = "codex-template"
-        case .claudeCode:
-            resourceName = "claudecode-template"
         }
         if let cached = Self.templateCache[resourceName] {
             return cached
@@ -561,9 +559,7 @@ struct StatusItemRenderer {
             return image
         }
 
-        let fallbackName = scope == .codex
-            ? "apple.terminal.fill"
-            : "curlybraces.square.fill"
+        let fallbackName = "apple.terminal.fill"
         let configuration = NSImage.SymbolConfiguration(pointSize: 18, weight: .medium)
         return NSImage(systemSymbolName: fallbackName, accessibilityDescription: nil)?
             .withSymbolConfiguration(configuration)

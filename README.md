@@ -1,11 +1,11 @@
 # codexU
 
 > [!IMPORTANT]
-> **建议升级到 v1.0.5 或更高版本。** v1.0.5 会按 Codex 实际返回的额度窗口自适应单环/双环和菜单栏布局，保留完整粒子体验但只在窗口置前聚焦时渲染，并进一步减少后台轮询、异常额度响应和 Claude Code 缓存带来的资源与可靠性问题；同时继续兼容 ChatGPT.app、旧版 Codex.app 与标准 CLI 路径。[下载最新版本](https://github.com/shanggqm/codexU/releases/latest)。
+> **当前 Codex-only 版本基于 v1.0.5。** 它会按 Codex 实际返回的额度窗口自适应单环/双环和菜单栏布局，保留完整粒子体验但只在窗口置前聚焦时渲染，并减少后台轮询与异常额度响应带来的资源和可靠性问题；同时继续兼容 ChatGPT.app、旧版 Codex.app 与标准 CLI 路径。[查看 Codex-only 版本](https://github.com/sukha-cn/codexU)。
 
 [English](README.en.md)
 
-codexU 是一个 macOS 菜单栏与桌面应用，用来查看 OpenAI Codex / ChatGPT Codex 和 Claude Code 的额度窗口、token 用量和今日任务状态。它把常用信息放在菜单栏和主窗口里，帮助你快速判断剩余额度、重置时间和当天工作进展。
+这是基于 codexU v1.0.5 的 Codex-only 分支，是一个 macOS 菜单栏与桌面应用，用来查看 OpenAI Codex / ChatGPT Codex 的额度窗口、token 用量和今日任务状态。它只加载 Codex 本机数据，不包含其他 Runtime 读取器。
 
 ## 界面截图
 
@@ -22,23 +22,21 @@ codexU 是一个 macOS 菜单栏与桌面应用，用来查看 OpenAI Codex / Ch
 ## 适合谁
 
 - 经常使用 OpenAI Codex、Codex CLI 或 Codex 桌面应用的开发者。
-- 同时使用 Codex 和 Claude Code 做开发，希望在一个入口查看两边本机用量的人。
-- 需要快速查看 5 小时/7 天额度、token 用量和重置时间的 ChatGPT Pro / Team 用户。
+- 需要快速查看当前有效额度窗口、token 用量和重置时间的 ChatGPT Pro / Team 用户。
 - 想在桌面查看 Codex 使用状态、减少反复打开浏览器或终端的人。
 
 ## 功能
 
-- 展示 Codex 5 小时和 7 天额度的剩余比例、已用比例和重置时间；按协议返回的实际窗口时长识别额度类型，并根据可信响应自适应单环/双环、单进度条/双进度条布局。
-- 新增状态栏 Runtime 菜单：点击菜单栏图标后先展示 Codex / Claude Code 卡片、5 小时和 7 日剩余、今日 token 与总 token。
+- 展示 Codex 实际返回额度窗口的剩余比例、已用比例和重置时间；按协议返回的窗口时长识别额度类型，并根据可信响应自适应单环/双环、单进度条/双进度条布局。仅返回 7 天窗口时会自动使用单额度布局，明确无活动窗口时显示无限制状态。
+- 状态栏 Codex 菜单展示当前有效额度、今日 token 与总 token。
 - 状态栏支持简约、经典、丰富三档透明显示：简约保留加粗额度环，经典在独立进度环内显示额度数字，丰富展示完整标签、进度条和重置时间；只有一个有效额度窗口时会自动收敛为单额度布局。
 - 环形额度保留完整粒子效果；默认只在主窗口可见、置前且聚焦时渲染，省电模式只在鼠标悬停额度环时渲染，后台、低电量、温控或“减少动态效果”状态下自动停用。
 - 状态栏额度可切换“已用量 / 剩余量”口径，并可选择显示 5 小时、7 天、今日 token 和重置倒计时；5h/7d 进度色与主界面蓝紫双环一致。
 - 状态栏用进度方向区分口径：已用为顺时针/左到右，剩余为逆时针/右到左，不额外占用文字空间。
-- 状态栏 Runtime 使用从原始 Logo 精确派生的单色模板，文字与图标按菜单栏实际深浅自动切换黑白；彩色品牌图标继续用于主窗口和浮窗。
+- 状态栏使用从 Codex Logo 精确派生的单色模板，文字与图标按菜单栏实际深浅自动切换黑白；彩色品牌图标继续用于主窗口和浮窗。
 - 今日总 token 在状态栏中只显示垂直居中的总量数字，不增加 `T` 标签。
 - 今日总量使用系统菜单栏正文尺寸；5h/7d 标签与重置时间使用更易读、仍弱于主数值的动态辅助前景色。
-- 主界面顶部新增 `Codex | Claude Code` 全局开关，可手动切换所有面板的数据范围。
-- 支持 Claude Code 本机 transcript 用量统计、最近 7 日趋势、项目排行、工具/Skill TOP 和任务看板基础能力。
+- 只注册 Codex 数据 Provider，不扫描或缓存 `~/.claude` 数据。
 - 汇总今日、近 7 天和累计 token 用量，并细分未缓存输入、命中缓存输入和输出。
 - 按 OpenAI API token 价格估算本月 API 等效价值，并在 Plus、Pro 100、Pro 200 和满额月价值之间展示进度刻度。
 - 下方仪表盘支持今日任务、用量趋势、项目排行和 Skill 使用视图。
@@ -47,7 +45,7 @@ codexU 是一个 macOS 菜单栏与桌面应用，用来查看 OpenAI Codex / Ch
 - 展示最近 7 天与全部项目排行，包含 token、估算价值、线程数和最近活跃时间。
 - 展示工具调用 TOP 列表和 Skill 使用 TOP 列表，帮助判断本地 Codex 工作结构。
 - 以标准 macOS 窗口运行，支持 Dock、系统窗口控制、最小化和关闭主窗口后继续后台运行；关闭主窗口会隐藏 Dock 图标并保留菜单栏图标。
-- 默认使用 `Command + U` 显示或隐藏主窗口，并可在设置中自定义；菜单栏 Runtime 菜单也可以快速打开主窗口、设置或退出。
+- 默认使用 `Command + U` 显示或隐藏主窗口，并可在设置中自定义；菜单栏 Codex 菜单也可以快速打开主窗口、设置或退出。
 - 设置窗口支持中文/英文界面、自动/浅色/深色外观、状态栏内容与实时预览、主窗口置顶、关闭行为、系统状态和更新检查配置。
 - 默认自动检查 GitHub Release 新版本并接收 beta 版本，发现新版时提供匹配当前 Mac 架构的 DMG 下载入口；不会静默下载安装，自动检查可关闭。
 - 本地读取数据，不上传 usage、线程或账户数据到第三方服务。
@@ -73,11 +71,11 @@ API 等效价值 =
 - 自定义组合至少需要两个修饰键，并包含 Command 或 Control；已知的高风险系统快捷键和辅助功能快捷键不可使用。
 - 录制快捷键时按退格键可清空、按 Esc 可取消；之后可恢复默认值或重新录制。
 - 应用会检测其他应用的独占快捷键注册冲突；macOS 不提供非独占注册的完整查询能力，如仍与其他应用冲突，请改用其他组合。
-- 菜单栏仪表图标：点击后打开 Runtime 菜单；点击 Codex 或 Claude Code 卡片会打开主界面并切到对应 Runtime。
-- 菜单栏 Runtime 菜单：展示 Codex / Claude Code 快速状态，并提供打开主窗口、打开设置和退出。
+- 菜单栏仪表图标：点击后打开 Codex 用量菜单；点击 Codex 卡片会打开主界面。
+- 菜单栏 Codex 用量菜单：展示额度和 token 快速状态，并提供打开主窗口、打开设置和退出。
 - 设置窗口：配置语言、外观、状态栏展示模式/额度口径/可见指标、主窗口置顶及关闭行为，并在系统区控制自动检查、查看状态或手动检查 GitHub Release 更新。
 - 主窗口顶部刷新按钮：立即刷新额度、token 统计、趋势图和任务看板。
-- 系统红黄绿窗口按钮：关闭、最小化或缩放主窗口；关闭后可通过菜单栏图标或快捷键唤回，退出请使用菜单栏 Runtime 菜单或 App 菜单。
+- 系统红黄绿窗口按钮：关闭、最小化或缩放主窗口；关闭后可通过菜单栏图标或快捷键唤回，退出请使用菜单栏 Codex 菜单或 App 菜单。
 
 ## 首次安装：隐私与安全
 
@@ -90,7 +88,7 @@ codexU 目前通过 GitHub Release 的 DMG 安装包分发，不经过 Mac App S
 
 也可以在 Finder 中右键点击 `codexU.app`，选择 **打开**，再确认系统安全提示。
 
-codexU 需要读取本机 `~/.codex/` 下的 Codex 数据；如果启用 Claude Code 统计，还会读取 `~/.claude/` 下的本机 transcript、任务和状态缓存。如果 macOS 弹出文件或文件夹访问授权，请允许访问，否则小组件无法读取本机 usage、线程和自动化任务信息。
+codexU 需要读取本机 `~/.codex/` 下的 Codex 数据。本分支不读取 `~/.claude/`。如果 macOS 弹出文件或文件夹访问授权，请仅允许小组件读取本机 Codex usage、线程和自动化任务所需的数据。
 
 ## 安装
 
@@ -112,7 +110,6 @@ codexU 需要读取本机 `~/.codex/` 下的 Codex 数据；如果启用 Claude 
 - 本机已安装 Codex。
 - 已登录 Codex 账户，额度信息才会显示。
 - Codex 至少使用过一次，以便生成 `~/.codex/state_5.sqlite`。
-- Claude Code 统计为可选能力；历史 token 来自 `~/.claude/projects/**/*.jsonl`，额度需要本地 statusLine snapshot cache。
 - 从源码构建时需要 Xcode Command Line Tools。
 
 ## 从源码构建
@@ -137,6 +134,12 @@ make install
 
 ```sh
 make probe
+```
+
+运行隔离的 Codex-only 与 v1.0.5 回归测试：
+
+```sh
+make test
 ```
 
 ## 打包 DMG
@@ -173,12 +176,9 @@ Developer ID 签名和 Apple notarization 流程见 [DISTRIBUTION.md](DISTRIBUTI
 - 用量趋势和项目排行：本机 session `token_count` 事件聚合；缺失精细事件时回退到线程更新时间的粗略口径。
 - 工具和 Skill 使用：本机 session 事件中的工具调用与 Skill 加载记录。
 - 定时任务：`~/.codex/automations/**/automation.toml` 中启用的 automation 元数据。
-- Claude Code 历史 token：`~/.claude/projects/**/*.jsonl` 中 assistant message 的 `message.usage` 字段。
-- Claude Code 工具、Skill 和任务：transcript 中的 `tool_use.name` / 显式 Skill attribution，以及 `~/.claude/tasks/**/*.json`。
-- Claude Code active 额度：可选读取 `~/Library/Caches/codexU/claude-code/statusline-snapshot.json`；缺失时 5 小时/7 日额度显示为 `--`。
-- 更新检测：默认访问 GitHub Releases API，读取 `shanggqm/codexU` 的公开 release 元数据，并把检查结果缓存到 `~/Library/Caches/codexU/update-check.json`。
+- 更新检测：默认访问 GitHub Releases API，读取 `sukha-cn/codexU` 的公开 release 元数据，并把检查结果缓存到 `~/Library/Caches/codexU/update-check.json`。
 
-当前 Codex 额度 API 暴露的是滚动窗口百分比和重置时间，不暴露绝对配额数量；Claude Code 首版只读取本地历史记录和可选 active snapshot，不代表 Claude.ai 官方账单。更完整的数据口径和回退策略见 [RESEARCH.md](RESEARCH.md)。
+当前 Codex 额度 API 暴露的是滚动窗口百分比和重置时间，不暴露绝对配额数量。更完整的数据口径和回退策略见 [RESEARCH.md](RESEARCH.md)。
 
 ## 常见问题
 
@@ -192,7 +192,7 @@ Developer ID 签名和 Apple notarization 流程见 [DISTRIBUTION.md](DISTRIBUTI
 
 ### 为什么显示的是剩余百分比，而不是绝对额度？
 
-当前 Codex 本地 API 暴露的是滚动窗口已用百分比和重置时间，不暴露绝对额度数量，所以 codexU 展示的是 5 小时和 7 天窗口的剩余百分比。
+当前 Codex 本地 API 暴露的是滚动窗口已用百分比和重置时间，不暴露绝对额度数量，所以 codexU 展示服务端当前实际返回窗口的剩余百分比。
 
 ### 支持 Intel Mac 吗？
 

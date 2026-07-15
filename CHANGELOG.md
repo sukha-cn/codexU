@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Rebased the Codex-only build on upstream v1.0.5 while preserving the single-provider boundary and fork-scoped update checks.
+- Added adaptive single-window, dual-window, and explicit unlimited quota presentation without adding another runtime reader.
+
 ## 1.0.5 - 2026-07-14
 
 - Codex 额度展示会按可信响应中的实际窗口数量自适应：仅有 7 天额度时使用单环、单进度条和居中百分比；双窗口恢复完整双环；服务明确返回零个额度限制时显示无限制状态。
@@ -9,7 +12,7 @@
 - 恢复完整环形粒子效果并将粒子约束在进度环描边内；默认仅在主窗口可见、置前且聚焦时渲染，省电模式仅在悬停环形区域时渲染，同时响应低电量、温控和减少动态效果状态。
 - 进一步收紧后台刷新条件和定时器容差：任务看板只在相关视图活跃时高频刷新，窗口失焦、最小化、被遮挡或位于其他 Space 时停止无效动画和刷新。
 - 优化单额度菜单栏样式、重置倒计时与对比度：百分比居中显示，文字会根据已填充/未填充背景自动切换颜色，重置时间使用 `↻ 5d` 等紧凑语义并补齐 VoiceOver 描述。
-- Claude Code transcript 缓存升级为纳秒级文件指纹，兼容迁移旧缓存、清理已删除文件记录并显式报告写入失败，减少不必要的重复解析。
+- Codex-only 分支移除其他 Runtime provider、资源、设置入口与本地读取路径。
 - 扩展发布门禁，新增额度拓扑、状态栏像素布局、粒子生命周期、缓存迁移与热路径回归测试。
 
 ## 1.0.4 - 2026-07-13

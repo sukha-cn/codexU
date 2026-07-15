@@ -6,10 +6,11 @@ final class GitHubReleaseUpdateChecker {
     private let session: URLSession
     private let now: () -> Date
     private let minimumAutomaticCheckInterval: TimeInterval
-    private let cacheSchemaVersion = 1
+    private let repository: String
+    private let cacheSchemaVersion = 2
 
     init(
-        owner: String = "shanggqm",
+        owner: String = "sukha-cn",
         repo: String = "codexU",
         cacheDirectory: URL = RuntimeLoadContext.live().cacheDirectory,
         session: URLSession = .shared,
@@ -17,6 +18,7 @@ final class GitHubReleaseUpdateChecker {
         now: @escaping () -> Date = Date.init
     ) {
         releasesURL = URL(string: "https://api.github.com/repos/\(owner)/\(repo)/releases")!
+        repository = "\(owner)/\(repo)"
         cacheURL = cacheDirectory.appendingPathComponent("update-check.json", isDirectory: false)
         self.session = session
         self.minimumAutomaticCheckInterval = minimumAutomaticCheckInterval
@@ -231,7 +233,8 @@ final class GitHubReleaseUpdateChecker {
     private func readCache() -> AppUpdateCache? {
         guard let data = try? Data(contentsOf: cacheURL),
               let cache = try? AppUpdateJSON.decoder.decode(AppUpdateCache.self, from: data),
-              cache.schemaVersion == cacheSchemaVersion
+              cache.schemaVersion == cacheSchemaVersion,
+              cache.repository == repository
         else { return nil }
         return cache
     }
@@ -239,6 +242,7 @@ final class GitHubReleaseUpdateChecker {
     private func writeCache(result: AppUpdateResult, etag: String?, checkedAt: Date) {
         let cache = AppUpdateCache(
             schemaVersion: cacheSchemaVersion,
+            repository: repository,
             checkedAt: checkedAt,
             etag: etag,
             result: result

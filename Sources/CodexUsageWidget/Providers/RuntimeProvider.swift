@@ -36,21 +36,7 @@ struct RuntimeProviderRegistry {
     let providers: [any RuntimeUsageProvider]
 
     init(providers: [any RuntimeUsageProvider]? = nil) {
-        let baseProviders = providers ?? [
-            CodexRuntimeProvider(),
-            ClaudeCodeRuntimeProvider()
-        ]
-        let filters = ProcessInfo.processInfo.environment["CODEXU_RUNTIME_FILTER"]?
-            .split(separator: ",")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
-            ?? []
-        if filters.isEmpty {
-            self.providers = baseProviders
-        } else {
-            self.providers = baseProviders.filter { provider in
-                filters.contains(provider.scope.runtimeId) || filters.contains(provider.scope.rawValue.lowercased())
-            }
-        }
+        self.providers = providers ?? [CodexRuntimeProvider()]
     }
 
     func provider(for scope: RuntimeScope) -> (any RuntimeUsageProvider)? {
@@ -62,7 +48,7 @@ struct CodexRuntimeProvider: RuntimeUsageProvider {
     let scope: RuntimeScope = .codex
 
     func loadSnapshot(context: RuntimeLoadContext) -> RuntimeUsageSnapshot {
-        let snapshot = CodexUsageReader().load(context: context)
+        let snapshot = CodexUsageReader(context: context).load(context: context)
         let status: RuntimeMenuStatus
         if snapshot.quotaReadSucceeded {
             status = .available
@@ -82,6 +68,6 @@ struct CodexRuntimeProvider: RuntimeUsageProvider {
     }
 
     func loadTaskBoard(context: RuntimeLoadContext) -> TaskBoard? {
-        CodexUsageReader().loadTaskBoard(context: context)
+        CodexUsageReader(context: context).loadTaskBoard(context: context)
     }
 }

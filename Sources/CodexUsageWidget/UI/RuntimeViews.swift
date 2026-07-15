@@ -1,58 +1,5 @@
 import SwiftUI
 
-struct RuntimeSelector: View {
-    @Environment(\.colorScheme) private var colorScheme
-    let selected: RuntimeScope
-    let scopes: [RuntimeScope]
-    let language: WidgetLanguage
-    let onSelect: (RuntimeScope) -> Void
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(scopes) { scope in
-                Button {
-                    onSelect(scope)
-                } label: {
-                    HStack(spacing: 5) {
-                        RuntimeLogoView(scope: scope, size: 15)
-                        Text(label(for: scope))
-                            .font(.system(size: 11, weight: .semibold))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.82)
-                    }
-                    .foregroundStyle(selected == scope ? .primary : .secondary)
-                    .frame(minWidth: scope == .claudeCode ? 112 : 78, minHeight: titlebarControlHeight)
-                    .padding(.horizontal, 6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(selected == scope ? WidgetPalette.controlSelectedFill(colorScheme) : Color.clear)
-                    )
-                }
-                .buttonStyle(.plain)
-                .help(label(for: scope))
-            }
-        }
-        .padding(3)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(WidgetPalette.controlFill(colorScheme))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                        .strokeBorder(WidgetPalette.controlStroke(colorScheme), lineWidth: 0.8)
-                )
-        )
-    }
-
-    private func label(for scope: RuntimeScope) -> String {
-        switch scope {
-        case .codex:
-            return "Codex"
-        case .claudeCode:
-            return language.text("Claude Code", "Claude Code")
-        }
-    }
-}
-
 struct RuntimeStatusMenuView: View {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var store: UsageStore
@@ -64,7 +11,7 @@ struct RuntimeStatusMenuView: View {
     let quit: () -> Void
 
     private var language: WidgetLanguage { settings.language }
-    private var displayedScopes: [RuntimeScope] { settings.visibleRuntimeScopes }
+    private var displayedScopes: [RuntimeScope] { [.codex] }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -415,11 +362,6 @@ struct RuntimeSummaryCard: View {
                 return summary.status == .available
                     ? "官方额度：当前无限制 · 本机统计"
                     : "本机统计；额度暂不可用"
-            case .claudeCode:
-                if hasQuota {
-                    return summary.status == .stale ? "过期快照 + 本机统计" : "active snapshot + 本机统计"
-                }
-                return "本机统计；额度需 active snapshot"
             }
         }
         switch summary.scope {
@@ -428,11 +370,6 @@ struct RuntimeSummaryCard: View {
             return summary.status == .available
                 ? "Official quota: no active limits · local records"
                 : "Local records; quota unavailable"
-        case .claudeCode:
-            if hasQuota {
-                return summary.status == .stale ? "Stale snapshot + local records" : "Active snapshot + local records"
-            }
-            return "Local records; quota needs active snapshot"
         }
     }
 }
@@ -477,8 +414,6 @@ struct RuntimeLogoView: View {
         switch scope {
         case .codex:
             return "terminal"
-        case .claudeCode:
-            return "curlybraces"
         }
     }
 }
@@ -489,8 +424,6 @@ private enum RuntimeLogo {
         switch scope {
         case .codex:
             name = "codex-color"
-        case .claudeCode:
-            name = "claudecode-color"
         }
         guard let url = Bundle.main.url(forResource: name, withExtension: "png") else {
             return nil

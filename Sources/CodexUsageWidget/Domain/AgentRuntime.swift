@@ -2,7 +2,6 @@ import Foundation
 
 enum RuntimeScope: String, CaseIterable, Identifiable, Codable, Equatable {
     case codex
-    case claudeCode
 
     var id: String { rawValue }
 
@@ -17,8 +16,6 @@ enum RuntimeScope: String, CaseIterable, Identifiable, Codable, Equatable {
         switch self {
         case .codex:
             return "codex"
-        case .claudeCode:
-            return "claude-code"
         }
     }
 
@@ -26,8 +23,6 @@ enum RuntimeScope: String, CaseIterable, Identifiable, Codable, Equatable {
         switch self {
         case .codex:
             return "Codex"
-        case .claudeCode:
-            return "Claude Code"
         }
     }
 }

@@ -26,7 +26,7 @@ else
 CODESIGN_FLAGS := --force --deep --options runtime --timestamp --sign "$(SIGN_IDENTITY)" $(CODESIGN_EXTRA_FLAGS)
 endif
 
-.PHONY: build run probe test-rate-limits test-statistics-time-zone test-particle-animation install dmg dmg-arm64 dmg-intel checksum checksum-arm64 checksum-intel release release-arm64 release-intel release-all release-package release-check notarize verify clean clean-dist
+.PHONY: build test test-codex-only run probe test-rate-limits test-statistics-time-zone test-particle-animation test-status-item install dmg dmg-arm64 dmg-intel checksum checksum-arm64 checksum-intel release release-arm64 release-intel release-all release-package release-check notarize verify clean clean-dist
 
 build:
 	rm -rf "$(APP_DIR)"
@@ -46,6 +46,11 @@ build:
 run: build
 	open "$(APP_DIR)"
 
+test: test-codex-only test-rate-limits test-statistics-time-zone test-particle-animation test-status-item
+
+test-codex-only:
+	./scripts/test-codex-only.sh
+
 probe: build
 	"$(MACOS_DIR)/$(APP_NAME)" --dump-json
 
@@ -57,6 +62,9 @@ test-statistics-time-zone:
 
 test-particle-animation:
 	./scripts/test-particle-animation.sh
+
+test-status-item:
+	./scripts/test-status-item.sh
 
 install: build
 	rm -rf "/Applications/$(APP_NAME).app"
